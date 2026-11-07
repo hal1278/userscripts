@@ -23,6 +23,11 @@
     /\/c\/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})(?:\/|$)/i;
   const KEPT_CONTENT_TYPES = new Set(["text", "multimodal_text"]);
   const ATTACHMENT_PLACEHOLDER = "*[attachment]*";
+  const FORM_TAG = /<form[\s>]/;
+  const CODE_FENCE_BLOCK = /```[\s\S]*?```/g;
+  // `<Cite ref="a"/>` or `<Cite refs={["a","b"]}/>`; every quoted string is a ref.
+  const CITE_TAG = /<Cite\b[^>]*\/>/g;
+  const QUOTED = /"([^"]+)"/g;
   const YAML_ESCAPES = {
     "\\": "\\\\",
     '"': '\\"',
@@ -33,6 +38,8 @@
 
   // ---------------------------------------------------------------------
   // Pure functions (no I/O, no globals). Exported for tests; see bottom.
+  // The API is unofficial and changes often, so unexpected shapes are
+  // skipped rather than treated as errors.
   // ---------------------------------------------------------------------
 
   /** Returns the conversation UUID in `pathname`, or null if there is none. */
@@ -47,34 +54,18 @@
    */
   function buildLinearPath(conversation) {
     const mapping = conversation?.mapping;
-    if (mapping === null || typeof mapping !== "object") {
-      throw new Error("conversation JSON has no `mapping` object");
+    let id = conversation?.current_node;
+    if (mapping === null || typeof mapping !== "object" || typeof id !== "string") {
+      throw new Error("conversation JSON has no `mapping` / `current_node`");
     }
-    const currentNode = conversation.current_node;
-    if (typeof currentNode !== "string") {
-      throw new Error("conversation JSON has no `current_node` string");
-    }
-
     const path = [];
     const visited = new Set();
-    let id = currentNode;
-    while (id !== null) {
-      if (visited.has(id)) {
-        throw new Error(`cycle in mapping at node ${id}`);
-      }
+    while (typeof id === "string") {
+      if (visited.has(id)) throw new Error(`cycle in mapping at node ${id}`);
       visited.add(id);
-      if (!Object.hasOwn(mapping, id)) {
-        throw new Error(`node ${id} is missing from mapping`);
-      }
       const node = mapping[id];
       if (node === null || typeof node !== "object") {
-        throw new Error(`node ${id} is not an object`);
-      }
-      if (!Object.hasOwn(node, "parent")) {
-        throw new Error(`node ${id} has no \`parent\` field`);
-      }
-      if (node.parent !== null && typeof node.parent !== "string") {
-        throw new Error(`node ${id} has a non-string \`parent\``);
+        throw new Error(`node ${id} is missing from mapping`);
       }
       path.push(node);
       id = node.parent;
@@ -90,52 +81,84 @@
       .join("\n\n");
   }
 
+  /** True when an assistant message shows a form (outside code blocks). */
+  function containsForm(message) {
+    const parts = message?.content?.parts;
+    if (message?.author?.role !== "assistant" || !Array.isArray(parts)) return false;
+    const text = parts.filter((part) => typeof part === "string").join("\n");
+    return FORM_TAG.test(text.replace(CODE_FENCE_BLOCK, ""));
+  }
+
   /**
    * Converts one mapping node to a Markdown section, or returns null when the
-   * node is not part of the visible conversation (system, tool, hidden
-   * context, non-final assistant channels, other content types, empty body).
+   * node is not part of the visible conversation. `parentNode` is the previous
+   * node on the path: ChatGPT stores a submitted form like a typed message, so
+   * a user message that follows a form is labelled.
    */
-  function nodeToMarkdown(node) {
-    const message = node.message;
-    // Structural nodes such as the root carry no message.
-    if (message === null || message === undefined) return null;
-    const label = `message ${message.id ?? node.id}`;
-
+  function nodeToMarkdown(node, parentNode) {
+    const message = node?.message;
+    if (!message || message.metadata?.is_visually_hidden_from_conversation === true) return null;
     const role = message.author?.role;
-    if (typeof role !== "string") {
-      throw new Error(`${label} has no \`author.role\``);
-    }
     if (role !== "user" && role !== "assistant") return null;
-
-    const contentType = message.content?.content_type;
-    if (typeof contentType !== "string") {
-      throw new Error(`${label} has no \`content.content_type\``);
-    }
-    if (!KEPT_CONTENT_TYPES.has(contentType)) return null;
-
-    if (
-      role === "assistant" &&
-      message.channel !== undefined &&
-      message.channel !== null &&
-      message.channel !== "final"
-    ) {
+    if (!KEPT_CONTENT_TYPES.has(message.content?.content_type)) return null;
+    if (role === "assistant" && message.channel != null && message.channel !== "final") {
       return null;
     }
-
     const parts = message.content.parts;
-    if (!Array.isArray(parts)) {
-      throw new Error(`${label} has no \`content.parts\` array`);
-    }
+    if (!Array.isArray(parts)) return null;
     const body = partsToText(parts);
     if (body.trim() === "") return null;
 
-    if (role === "user") return `## User\n\n${body}`;
-
-    const modelSlug = message.metadata?.model_slug;
-    if (typeof modelSlug !== "string" || modelSlug === "") {
-      throw new Error(`${label} has no \`metadata.model_slug\``);
+    if (role === "user") {
+      const heading = containsForm(parentNode?.message) ? "## User (form response)" : "## User";
+      return `${heading}\n\n${body}`;
     }
-    return `## ChatGPT (${modelSlug})\n\n${body}`;
+    const modelSlug = message.metadata?.model_slug;
+    const heading =
+      typeof modelSlug === "string" && modelSlug ? `## ChatGPT (${modelSlug})` : "## ChatGPT";
+    return `${heading}\n\n${body}`;
+  }
+
+  /**
+   * Collects citation sources from anywhere in `value`: every object with a
+   * string `ref_id` and a string `url`. Where ChatGPT keeps them changes, so
+   * no path is assumed.
+   */
+  function collectSources(value) {
+    const sources = new Map();
+    const stack = [value];
+    while (stack.length > 0) {
+      const item = stack.pop();
+      if (item === null || typeof item !== "object") continue;
+      if (typeof item.ref_id === "string" && typeof item.url === "string") {
+        if (!sources.has(item.ref_id)) {
+          const title = typeof item.title === "string" ? item.title : "";
+          sources.set(item.ref_id, { url: item.url, title });
+        }
+      }
+      stack.push(...Object.values(item));
+    }
+    return sources;
+  }
+
+  /**
+   * Replaces each `<Cite …/>` tag with links to its sources. Unknown refs are
+   * kept by name; a tag with no known ref is left as is.
+   */
+  function replaceCitations(text, sources) {
+    return text.replace(CITE_TAG, (tag) => {
+      const refs = [...tag.matchAll(QUOTED)].map((match) => match[1]);
+      if (!refs.some((ref) => sources.has(ref))) return tag;
+      const links = refs.map((ref) => {
+        const source = sources.get(ref);
+        if (!source) return ref;
+        const label = (source.title.trim() || source.url)
+          .replace(/\s+/g, " ")
+          .replace(/[[\]]/g, "\\$&");
+        return `[${label}](${source.url})`;
+      });
+      return `(${links.join("; ")})`;
+    });
   }
 
   /** Quotes `value` as a YAML double-quoted scalar. */
@@ -159,38 +182,30 @@
     return `"${quoted}"`;
   }
 
-  /** Converts a Unix timestamp in seconds (the API's format) to ISO 8601. */
-  function unixSecondsToIso(seconds, field) {
-    if (typeof seconds !== "number" || !Number.isFinite(seconds)) {
-      throw new Error(`conversation JSON has no numeric \`${field}\``);
-    }
-    return new Date(seconds * 1000).toISOString();
-  }
-
   /** Builds the whole Markdown document for a conversation JSON. */
   function buildMarkdown(conversation, conversationId, exportedAt) {
-    const title = conversation?.title;
-    if (typeof title !== "string") {
-      throw new Error("conversation JSON has no `title` string");
-    }
-    const created = unixSecondsToIso(conversation.create_time, "create_time");
-
+    const sources = collectSources(conversation);
     const sections = buildLinearPath(conversation)
-      .map(nodeToMarkdown)
-      .filter((section) => section !== null);
+      .map((node, index, path) => nodeToMarkdown(node, path[index - 1]))
+      .filter((section) => section !== null)
+      .map((section) => replaceCitations(section, sources));
     if (sections.length === 0) {
       throw new Error("conversation has no user or assistant messages");
     }
 
+    const title = typeof conversation.title === "string" ? conversation.title : "";
+    const created = conversation.create_time;
     const frontMatter = [
       "---",
       `title: ${yamlQuote(title)}`,
       `conversation_id: ${conversationId}`,
-      `created: ${created}`,
+      Number.isFinite(created) ? `created: ${new Date(created * 1000).toISOString()}` : null,
       `exported: ${exportedAt.toISOString()}`,
       `url: ${ORIGIN}/c/${conversationId}`,
       "---",
-    ].join("\n");
+    ]
+      .filter((line) => line !== null)
+      .join("\n");
 
     return `${[frontMatter, ...sections].join("\n\n")}\n`;
   }
@@ -204,6 +219,7 @@
     try {
       response = await fetch(url, {
         credentials: "include",
+        cache: "no-store",
         headers: { Accept: "application/json", ...headers },
       });
     } catch (error) {
@@ -272,6 +288,8 @@
       extractConversationId,
       buildLinearPath,
       nodeToMarkdown,
+      collectSources,
+      replaceCitations,
       yamlQuote,
       buildMarkdown,
     };

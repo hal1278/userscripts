@@ -7,6 +7,7 @@ Userscripts by hal1278, tested with Firefox + [Violentmonkey](https://violentmon
 ### ChatGPT Markdown Handoff
 
 [`scripts/chatgpt-markdown-export.user.js`](scripts/chatgpt-markdown-export.user.js)
+· [Specification (Japanese)](docs/chatgpt-markdown-export.md)
 
 Copies the ChatGPT conversation that is open in the current tab to the clipboard as Markdown.
 Only the branch shown on screen is exported (the path from the root to `current_node`).
@@ -17,8 +18,10 @@ Only the branch shown on screen is exported (the path from the root to `current_
   (`/api/auth/session`, then `/backend-api/conversation/<id>`). Nothing is sent anywhere else,
   and it does not read or modify the page DOM.
 - Kept: user messages and final assistant messages (`text` / `multimodal_text`).
-  Dropped: system, tool, custom-instruction context, reasoning and other non-final output.
-  Images and other non-text parts become `*[attachment]*`.
+  Dropped: system, tool, custom-instruction context, reasoning, other non-final output and
+  messages hidden from the conversation. Images and other non-text parts become `*[attachment]*`.
+- Message text is copied as is, except `<Cite …/>` tags, which become links to their sources, and
+  user messages sent from a ChatGPT form, which are headed `## User (form response)`.
 
 Output:
 
@@ -40,8 +43,8 @@ url: https://chatgpt.com/c/<id>
 ...
 ```
 
-The ChatGPT API is unofficial. If a field the script relies on is missing, it stops with an
-error notification instead of producing partial output.
+The ChatGPT API is unofficial and changes often, so the script is best effort: it skips what it
+does not recognise and only fails when nothing useful can be produced. Check the output.
 
 ## Development
 

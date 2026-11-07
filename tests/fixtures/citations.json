@@ -1,0 +1,109 @@
+{
+  "title": "Synthetic citation test",
+  "create_time": 1735689600,
+  "current_node": "a2",
+  "mapping": {
+    "root": { "id": "root", "message": null, "parent": null, "children": ["u1"] },
+    "u1": {
+      "id": "u1",
+      "message": {
+        "id": "u1",
+        "author": { "role": "user" },
+        "content": { "content_type": "text", "parts": ["Find prior work."] },
+        "metadata": {}
+      },
+      "parent": "root",
+      "children": ["a1"]
+    },
+    "a1": {
+      "id": "a1",
+      "message": {
+        "id": "a1",
+        "author": { "role": "assistant" },
+        "content": {
+          "content_type": "text",
+          "parts": [
+            "Method A exists.<Cite ref=\"turn1search0\"/> Method B is unknown.<Cite ref=\"turn1search9\"/>"
+          ]
+        },
+        "channel": "final",
+        "metadata": {
+          "model_slug": "gpt-test",
+          "widget": {
+            "results": {
+              "x": {
+                "state": {
+                  "items": [
+                    { "ref_id": "turn1search0", "url": "https://example.com/a", "title": "Paper A" }
+                  ]
+                }
+              },
+              "y": {
+                "items": [
+                  {
+                    "ref_id": "turn1view1",
+                    "url": "https://example.com/spec.pdf",
+                    "title": "[PDF] Spec\nv2"
+                  }
+                ]
+              }
+            }
+          },
+          "search_result_groups": [
+            {
+              "entries": [
+                {
+                  "ref_id": { "turn_index": 1, "ref_index": 0 },
+                  "url": "https://example.com/ignored"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "parent": "u1",
+      "children": ["a1-hidden"]
+    },
+    "a1-hidden": {
+      "id": "a1-hidden",
+      "message": {
+        "id": "a1-hidden",
+        "author": { "role": "assistant" },
+        "content": { "content_type": "text", "parts": ["Method B is unknown. (DUPLICATE)"] },
+        "channel": "final",
+        "metadata": { "model_slug": "gpt-test", "is_visually_hidden_from_conversation": true }
+      },
+      "parent": "a1",
+      "children": ["u2"]
+    },
+    "u2": {
+      "id": "u2",
+      "message": {
+        "id": "u2",
+        "author": { "role": "user" },
+        "content": { "content_type": "text", "parts": ["And the spec?"] },
+        "metadata": {}
+      },
+      "parent": "a1-hidden",
+      "children": ["a2"]
+    },
+    "a2": {
+      "id": "a2",
+      "message": {
+        "id": "a2",
+        "author": { "role": "assistant" },
+        "content": {
+          "content_type": "text",
+          "parts": ["See the spec.<Cite ref=\"turn1view1\"/> Also <Cite ref=\"turn2search3\"/>."]
+        },
+        "channel": "final",
+        "metadata": {
+          "model_slug": "gpt-test",
+          "items": [{ "ref_id": "turn2search3", "url": "https://example.com/untitled" }]
+        }
+      },
+      "parent": "u2",
+      "children": []
+    }
+  }
+}

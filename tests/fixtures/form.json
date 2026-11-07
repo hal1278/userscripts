@@ -1,0 +1,84 @@
+{
+  "title": "Synthetic form test",
+  "create_time": 1735689600,
+  "update_time": 1735693200,
+  "conversation_id": "99999999-8888-4777-8666-555555555555",
+  "current_node": "u-typed",
+  "mapping": {
+    "root": {
+      "id": "root",
+      "message": null,
+      "parent": null,
+      "children": ["u1"]
+    },
+    "u1": {
+      "id": "u1",
+      "message": {
+        "id": "u1",
+        "author": { "role": "user" },
+        "content": { "content_type": "text", "parts": ["Ask me what you need."] },
+        "metadata": {}
+      },
+      "parent": "root",
+      "children": ["a-form"]
+    },
+    "a-form": {
+      "id": "a-form",
+      "message": {
+        "id": "a-form",
+        "author": { "role": "assistant" },
+        "content": {
+          "content_type": "text",
+          "parts": [
+            "Please fill in:\n\n<box>\n  <form>\n    <input value={color} onChange={setColor} />\n    <button submit>Send</button>\n  </form>\n</box>"
+          ]
+        },
+        "channel": "final",
+        "metadata": {
+          "model_slug": "gpt-test",
+          "model_dil_v2": { "code": "SYNTHETIC" },
+          "view_state": { "root": { "color": "blue" } }
+        }
+      },
+      "parent": "u1",
+      "children": ["u-form"]
+    },
+    "u-form": {
+      "id": "u-form",
+      "message": {
+        "id": "u-form",
+        "author": { "role": "user" },
+        "content": { "content_type": "text", "parts": ["Color: \"blue\"."] },
+        "metadata": {}
+      },
+      "parent": "a-form",
+      "children": ["a-html"]
+    },
+    "a-html": {
+      "id": "a-html",
+      "message": {
+        "id": "a-html",
+        "author": { "role": "assistant" },
+        "content": {
+          "content_type": "text",
+          "parts": ["An HTML example:\n\n```html\n<form action=\"/send\"></form>\n```"]
+        },
+        "channel": "final",
+        "metadata": { "model_slug": "gpt-test" }
+      },
+      "parent": "u-form",
+      "children": ["u-typed"]
+    },
+    "u-typed": {
+      "id": "u-typed",
+      "message": {
+        "id": "u-typed",
+        "author": { "role": "user" },
+        "content": { "content_type": "text", "parts": ["Thanks."] },
+        "metadata": {}
+      },
+      "parent": "a-html",
+      "children": []
+    }
+  }
+}
