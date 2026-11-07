@@ -1,0 +1,95 @@
+{
+  "title": "Synthetic branch test",
+  "create_time": 1735689600.5,
+  "update_time": 1735693200.0,
+  "conversation_id": "11111111-2222-4333-8444-555555555555",
+  "current_node": "a2-edited",
+  "mapping": {
+    "root": {
+      "id": "root",
+      "message": null,
+      "parent": null,
+      "children": ["sys"]
+    },
+    "sys": {
+      "id": "sys",
+      "message": {
+        "id": "sys",
+        "author": { "role": "system", "name": null, "metadata": {} },
+        "content": { "content_type": "text", "parts": [""] },
+        "metadata": {}
+      },
+      "parent": "root",
+      "children": ["u1"]
+    },
+    "u1": {
+      "id": "u1",
+      "message": {
+        "id": "u1",
+        "author": { "role": "user", "name": null, "metadata": {} },
+        "content": { "content_type": "text", "parts": ["First question"] },
+        "metadata": {}
+      },
+      "parent": "sys",
+      "children": ["a1"]
+    },
+    "a1": {
+      "id": "a1",
+      "message": {
+        "id": "a1",
+        "author": { "role": "assistant", "name": null, "metadata": {} },
+        "content": { "content_type": "text", "parts": ["First answer"] },
+        "channel": "final",
+        "metadata": { "model_slug": "gpt-test-a" }
+      },
+      "parent": "u1",
+      "children": ["u2-original", "u2-edited"]
+    },
+    "u2-original": {
+      "id": "u2-original",
+      "message": {
+        "id": "u2-original",
+        "author": { "role": "user", "name": null, "metadata": {} },
+        "content": { "content_type": "text", "parts": ["Abandoned question"] },
+        "metadata": {}
+      },
+      "parent": "a1",
+      "children": ["a2-original"]
+    },
+    "a2-original": {
+      "id": "a2-original",
+      "message": {
+        "id": "a2-original",
+        "author": { "role": "assistant", "name": null, "metadata": {} },
+        "content": { "content_type": "text", "parts": ["Abandoned answer"] },
+        "channel": "final",
+        "metadata": { "model_slug": "gpt-test-a" }
+      },
+      "parent": "u2-original",
+      "children": []
+    },
+    "u2-edited": {
+      "id": "u2-edited",
+      "message": {
+        "id": "u2-edited",
+        "author": { "role": "user", "name": null, "metadata": {} },
+        "content": { "content_type": "text", "parts": ["Edited question"] },
+        "metadata": {}
+      },
+      "parent": "a1",
+      "children": ["a2-edited"]
+    },
+    "a2-edited": {
+      "id": "a2-edited",
+      "message": {
+        "id": "a2-edited",
+        "author": { "role": "assistant", "name": null, "metadata": {} },
+        "content": { "content_type": "text", "parts": ["Final answer"] },
+        "channel": "final",
+        "metadata": { "model_slug": "gpt-test-b" }
+      },
+      "parent": "u2-edited",
+      "children": []
+    }
+  }
+}

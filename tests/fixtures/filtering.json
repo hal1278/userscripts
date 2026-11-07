@@ -1,0 +1,162 @@
+{
+  "title": "Synthetic filtering test",
+  "create_time": 1735689600,
+  "update_time": 1735693200,
+  "conversation_id": "aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee",
+  "current_node": "a-plain",
+  "mapping": {
+    "root": {
+      "id": "root",
+      "message": null,
+      "parent": null,
+      "children": ["sys"]
+    },
+    "sys": {
+      "id": "sys",
+      "message": {
+        "id": "sys",
+        "author": { "role": "system" },
+        "content": { "content_type": "text", "parts": ["SYSTEM PROMPT"] },
+        "metadata": {}
+      },
+      "parent": "root",
+      "children": ["context"]
+    },
+    "context": {
+      "id": "context",
+      "message": {
+        "id": "context",
+        "author": { "role": "user" },
+        "content": {
+          "content_type": "user_editable_context",
+          "user_profile": "USER PROFILE",
+          "user_instructions": "USER INSTRUCTIONS"
+        },
+        "metadata": {}
+      },
+      "parent": "sys",
+      "children": ["u1"]
+    },
+    "u1": {
+      "id": "u1",
+      "message": {
+        "id": "u1",
+        "author": { "role": "user" },
+        "content": {
+          "content_type": "text",
+          "parts": ["Question with **markdown** and `code`"]
+        },
+        "metadata": {}
+      },
+      "parent": "context",
+      "children": ["thoughts"]
+    },
+    "thoughts": {
+      "id": "thoughts",
+      "message": {
+        "id": "thoughts",
+        "author": { "role": "assistant" },
+        "content": {
+          "content_type": "thoughts",
+          "thoughts": [{ "summary": "THOUGHT SUMMARY", "content": "THOUGHT" }]
+        },
+        "metadata": { "model_slug": "gpt-test" }
+      },
+      "parent": "u1",
+      "children": ["analysis"]
+    },
+    "analysis": {
+      "id": "analysis",
+      "message": {
+        "id": "analysis",
+        "author": { "role": "assistant" },
+        "content": { "content_type": "text", "parts": ["ANALYSIS CHANNEL"] },
+        "channel": "analysis",
+        "metadata": { "model_slug": "gpt-test" }
+      },
+      "parent": "thoughts",
+      "children": ["code"]
+    },
+    "code": {
+      "id": "code",
+      "message": {
+        "id": "code",
+        "author": { "role": "assistant" },
+        "content": { "content_type": "code", "language": "unknown", "text": "TOOL CALL" },
+        "metadata": { "model_slug": "gpt-test" }
+      },
+      "parent": "analysis",
+      "children": ["tool"]
+    },
+    "tool": {
+      "id": "tool",
+      "message": {
+        "id": "tool",
+        "author": { "role": "tool", "name": "web" },
+        "content": { "content_type": "text", "parts": ["TOOL OUTPUT"] },
+        "metadata": {}
+      },
+      "parent": "code",
+      "children": ["a-final"]
+    },
+    "a-final": {
+      "id": "a-final",
+      "message": {
+        "id": "a-final",
+        "author": { "role": "assistant" },
+        "content": {
+          "content_type": "text",
+          "parts": ["# Heading\n\n- item with \\*escaped\\* star\n"]
+        },
+        "channel": "final",
+        "metadata": { "model_slug": "gpt-test" }
+      },
+      "parent": "tool",
+      "children": ["u2"]
+    },
+    "u2": {
+      "id": "u2",
+      "message": {
+        "id": "u2",
+        "author": { "role": "user" },
+        "content": {
+          "content_type": "multimodal_text",
+          "parts": [
+            {
+              "content_type": "image_asset_pointer",
+              "asset_pointer": "file-service://file-synthetic",
+              "width": 1,
+              "height": 1
+            },
+            "What is in this image?"
+          ]
+        },
+        "metadata": {}
+      },
+      "parent": "a-final",
+      "children": ["a-empty"]
+    },
+    "a-empty": {
+      "id": "a-empty",
+      "message": {
+        "id": "a-empty",
+        "author": { "role": "assistant" },
+        "content": { "content_type": "text", "parts": [""] },
+        "metadata": { "model_slug": "gpt-test" }
+      },
+      "parent": "u2",
+      "children": ["a-plain"]
+    },
+    "a-plain": {
+      "id": "a-plain",
+      "message": {
+        "id": "a-plain",
+        "author": { "role": "assistant" },
+        "content": { "content_type": "text", "parts": ["A single pixel."] },
+        "metadata": { "model_slug": "gpt-test" }
+      },
+      "parent": "a-empty",
+      "children": []
+    }
+  }
+}
