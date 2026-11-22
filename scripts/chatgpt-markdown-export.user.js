@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         ChatGPT Markdown Handoff
 // @namespace    https://github.com/hal1278/userscripts
-// @version      0.1.0
+// @version      0.2.0
 // @description  Copy the ChatGPT conversation shown on screen (current branch only) as Markdown.
 // @author       hal1278
 // @license      MIT
@@ -90,12 +90,23 @@
   }
 
   /**
+   * Wraps a message body in a `markdown` code fence longer than any backtick
+   * run inside it, so headings and code blocks in the body stay inside.
+   */
+  function fenceBody(text) {
+    const longest = (text.match(/`+/g) ?? []).reduce((max, run) => Math.max(max, run.length), 0);
+    const marks = "`".repeat(Math.max(3, longest + 1));
+    return `${marks}markdown\n${text.replace(/\n+$/, "")}\n${marks}`;
+  }
+
+  /**
    * Converts one mapping node to a Markdown section, or returns null when the
    * node is not part of the visible conversation. `parentNode` is the previous
    * node on the path: ChatGPT stores a submitted form like a typed message, so
-   * a user message that follows a form is labelled.
+   * a user message that follows a form is labelled. `sources` (from
+   * collectSources) resolves citations before the body is fenced.
    */
-  function nodeToMarkdown(node, parentNode) {
+  function nodeToMarkdown(node, parentNode, sources = new Map()) {
     const message = node?.message;
     if (!message || message.metadata?.is_visually_hidden_from_conversation === true) return null;
     const role = message.author?.role;
@@ -106,8 +117,9 @@
     }
     const parts = message.content.parts;
     if (!Array.isArray(parts)) return null;
-    const body = partsToText(parts);
-    if (body.trim() === "") return null;
+    const text = partsToText(parts);
+    if (text.trim() === "") return null;
+    const body = fenceBody(replaceCitations(text, sources));
 
     if (role === "user") {
       const heading = containsForm(parentNode?.message) ? "## User (form response)" : "## User";
@@ -186,9 +198,8 @@
   function buildMarkdown(conversation, conversationId, exportedAt) {
     const sources = collectSources(conversation);
     const sections = buildLinearPath(conversation)
-      .map((node, index, path) => nodeToMarkdown(node, path[index - 1]))
-      .filter((section) => section !== null)
-      .map((section) => replaceCitations(section, sources));
+      .map((node, index, path) => nodeToMarkdown(node, path[index - 1], sources))
+      .filter((section) => section !== null);
     if (sections.length === 0) {
       throw new Error("conversation has no user or assistant messages");
     }
@@ -287,6 +298,7 @@
     module.exports = {
       extractConversationId,
       buildLinearPath,
+      fenceBody,
       nodeToMarkdown,
       collectSources,
       replaceCitations,

@@ -38,7 +38,7 @@
 
 ## 4. 出力
 
-```
+````
 ---
 title: "<title>"
 conversation_id: <id>
@@ -49,12 +49,16 @@ url: https://chatgpt.com/c/<id>
 
 ## User
 
+```markdown
 ...
+```
 
 ## ChatGPT (<model_slug>)
 
+```markdown
 ...
 ```
+````
 
 - title は YAML の二重引用符形式でエスケープする。
 - 欠けている値の扱い: title が無ければ `""`、`create_time` が無ければ `created` 行を
@@ -81,6 +85,14 @@ url: https://chatgpt.com/c/<id>
 - ChatGPT のフォームで送信した回答は、通常の user メッセージとして保存される。
 - 直前の assistant メッセージの本文（コードブロックを除く）に `<form` があれば、見出しを
   `## User (form response)` にする。
+
+### 4.3 本文の囲み
+
+- Gemini 版（[gemini-markdown-export.md](gemini-markdown-export.md) 4.1 節）と同じ規則で、User と
+  ChatGPT の本文をそれぞれ `markdown` のコードブロックで囲む。回答中の見出しが区切りの
+  `## User` / `## ChatGPT` と同じ階層になるのを避けるため。
+- 囲むのは、引用の置き換え（4.1）を済ませた後の本文。
+- 見出しは囲みの外に置く。`## User (form response)` もそのまま。
 
 ## 5. 未確認の点
 
