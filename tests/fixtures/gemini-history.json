@@ -1,0 +1,145 @@
+[
+  [
+    [
+      ["c_00000000000000aa", "r_0000000000000003"],
+      ["c_00000000000000aa", "r_0000000000000003", "rc_0000000000000031"],
+      [["Which sources did you use?", null, null, null, [[]]], 2, null, 1, "0000000000000000"],
+      [
+        [
+          [
+            "rc_0000000000000031",
+            ["Two pages were used.", "ignored second string"],
+            [
+              [
+                0,
+                3,
+                [
+                  "https://example.com/a",
+                  null,
+                  null,
+                  null,
+                  null,
+                  null,
+                  null,
+                  null,
+                  null,
+                  null,
+                  null,
+                  null,
+                  null,
+                  null,
+                  null,
+                  null,
+                  null,
+                  null,
+                  null,
+                  null,
+                  "https://www.gstatic.com/favicon-a.png"
+                ],
+                1,
+                null,
+                1
+              ],
+              [4, 9, ["https://example.org/b"], 1],
+              [10, 19, ["https://example.com/a"], 1]
+            ]
+          ]
+        ],
+        null,
+        null,
+        "rc_0000000000000031",
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      [1735693200, 0]
+    ],
+    "unexpected turn shape",
+    [
+      ["c_00000000000000aa", "r_0000000000000002"],
+      ["c_00000000000000aa", "r_0000000000000002", "rc_0000000000000022"],
+      [["Write it again, shorter.", null, null, null, [[]]], 2, null, 1, "0000000000000000"],
+      [
+        [
+          ["rc_0000000000000021", ["Long draft that was not chosen."]],
+          ["rc_0000000000000022", ["Short draft."], null, [["**Thinking**\n\nHidden reasoning."]]]
+        ],
+        null,
+        null,
+        "rc_0000000000000022",
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        "Synthetic Model"
+      ],
+      [1735690000, 0]
+    ],
+    [
+      ["c_00000000000000aa", "r_0000000000000001"],
+      ["c_00000000000000aa", "r_0000000000000001", "rc_missing"],
+      [["Hello", null, null, null, [[]]], 2, null, 1, "0000000000000000"],
+      [
+        [
+          [
+            "rc_0000000000000011",
+            ["Hi there.\n\n<FollowUp label=\"Ask more\" query=\"Tell me more\"/>"]
+          ]
+        ],
+        null,
+        null,
+        "rc_missing",
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        "Synthetic Model"
+      ],
+      [1735689600, 0]
+    ]
+  ],
+  null,
+  null,
+  []
+]

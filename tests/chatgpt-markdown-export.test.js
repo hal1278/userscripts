@@ -3,6 +3,7 @@ const { describe, it } = require("node:test");
 const {
   extractConversationId,
   buildLinearPath,
+  fenceBody,
   nodeToMarkdown,
   collectSources,
   replaceCitations,
@@ -20,6 +21,9 @@ const EXPORTED_AT = new Date("2026-01-02T03:04:05.000Z");
 
 // Fixtures are shared via the require cache, so mutate copies only.
 const clone = (value) => structuredClone(value);
+
+/** A message body as the script fences it (no backtick run of 3+ inside). */
+const fenced = (text) => `\`\`\`markdown\n${text}\n\`\`\``;
 
 const sectionsOf = (conversation) =>
   buildLinearPath(conversation)
@@ -113,10 +117,10 @@ describe("nodeToMarkdown", () => {
 
   it("keeps user and final assistant messages in order", () => {
     assert.deepEqual(sections(), [
-      "## User\n\nQuestion with **markdown** and `code`",
-      "## ChatGPT (gpt-test)\n\n# Heading\n\n- item with \\*escaped\\* star\n",
-      "## User\n\n*[attachment]*\n\nWhat is in this image?",
-      "## ChatGPT (gpt-test)\n\nA single pixel.",
+      `## User\n\n${fenced("Question with **markdown** and `code`")}`,
+      `## ChatGPT (gpt-test)\n\n${fenced("# Heading\n\n- item with \\*escaped\\* star")}`,
+      `## User\n\n${fenced("*[attachment]*\n\nWhat is in this image?")}`,
+      `## ChatGPT (gpt-test)\n\n${fenced("A single pixel.")}`,
     ]);
   });
 
@@ -132,7 +136,7 @@ describe("nodeToMarkdown", () => {
   it("uses a plain heading when model_slug is missing", () => {
     const node = clone(filtering.mapping["a-plain"]);
     delete node.message.metadata.model_slug;
-    assert.equal(nodeToMarkdown(node), "## ChatGPT\n\nA single pixel.");
+    assert.equal(nodeToMarkdown(node), `## ChatGPT\n\n${fenced("A single pixel.")}`);
   });
 
   it("skips messages without author.role, content_type or parts", () => {
@@ -151,20 +155,35 @@ describe("nodeToMarkdown", () => {
 describe("form responses", () => {
   it("labels a user message that answers a form widget", () => {
     const sections = sectionsOf(form);
-    assert.equal(sections[2], '## User (form response)\n\nColor: "blue".');
+    assert.equal(sections[2], `## User (form response)\n\n${fenced('Color: "blue".')}`);
   });
 
   it("keeps the form markup in the assistant message as is", () => {
     assert.match(
       sectionsOf(form)[1],
-      /^## ChatGPT \(gpt-test\)\n\nPlease fill in:\n\n<box>\n {2}<form>/,
+      /^## ChatGPT \(gpt-test\)\n\n```markdown\nPlease fill in:\n\n<box>\n {2}<form>/,
     );
   });
 
   it("does not label replies to a message that only shows <form> in code", () => {
     const sections = sectionsOf(form);
-    assert.equal(sections[0], "## User\n\nAsk me what you need.");
-    assert.equal(sections[4], "## User\n\nThanks.");
+    assert.equal(sections[0], `## User\n\n${fenced("Ask me what you need.")}`);
+    assert.equal(sections[4], `## User\n\n${fenced("Thanks.")}`);
+  });
+});
+
+describe("fenceBody", () => {
+  it("uses three backticks when the body has no code block", () => {
+    assert.equal(fenceBody("Text with `inline` code"), "```markdown\nText with `inline` code\n```");
+  });
+
+  it("makes the fence longer than any backtick run inside", () => {
+    const body = "## Heading\n\n```c\nint x;\n```\n\n````\nnested\n````";
+    assert.equal(fenceBody(body), `\`\`\`\`\`markdown\n${body}\n\`\`\`\`\``);
+  });
+
+  it("drops trailing newlines only", () => {
+    assert.equal(fenceBody("\n  indented\n\n"), "```markdown\n\n  indented\n```");
   });
 });
 
@@ -206,7 +225,9 @@ describe("citations", () => {
   it("resolves refs whose source is stored on another message", () => {
     const markdown = buildMarkdown(citations, UUID, EXPORTED_AT);
     assert.ok(
-      markdown.includes("See the spec.([\\[PDF\\] Spec v2](https://example.com/spec.pdf))"),
+      markdown.includes(
+        "```markdown\nSee the spec.([\\[PDF\\] Spec v2](https://example.com/spec.pdf))",
+      ),
     );
   });
 });
@@ -241,19 +262,19 @@ describe("buildMarkdown", () => {
         "",
         "## User",
         "",
-        "First question",
+        fenced("First question"),
         "",
         "## ChatGPT (gpt-test-a)",
         "",
-        "First answer",
+        fenced("First answer"),
         "",
         "## User",
         "",
-        "Edited question",
+        fenced("Edited question"),
         "",
         "## ChatGPT (gpt-test-b)",
         "",
-        "Final answer",
+        fenced("Final answer"),
         "",
       ].join("\n"),
     );
