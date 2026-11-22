@@ -41,6 +41,9 @@
 - 読んだ値は `[往復の配列, 続きトークン, …]`。続きトークンが文字列のあいだは、それを引数に入れて
   繰り返し取得する。件数 2 で 3 回取得した結果は、件数 10 で 1 回取得した結果と一致した。
   実装では件数 10 で取得し、トークンが空・同じトークンの再出現・200 回で止める。
+- リクエストはページの `fetch`（sandbox からは `unsafeWindow.fetch`、引数は `cloneInto` でページへ
+  複製）で送る。Firefox + Violentmonkey で sandbox 自身の `fetch` を使ったところ、
+  `NetworkError when attempting to fetch resource.` で失敗した（2026-11-22、ユーザー報告）。
 - 失敗時は、段階（token / history）と HTTP status を通知する。トークンは出力しない。
 
 ## 3. 抽出
@@ -140,7 +143,8 @@ Sources:
 
 ## 6. 未確認の点
 
-- Violentmonkey の sandbox から `unsafeWindow.WIZ_global_data` を読めるか。fetch に cookie が付くか。
+- Firefox + Violentmonkey で、ページの `fetch` 経由なら取得できるか（0.1.1 で変更、未確認）。
+  `unsafeWindow.WIZ_global_data` は読めている（0.1.0 の失敗は history の段階だった）。
   2026-11-22 に、スクリプト全体を page context で実行した（GM_* は stub、Chromium 系ブラウザ、
   7 往復の会話）。その条件では取得からコピーまで通り、往復数は画面と一致した。
 - 下書き（候補が複数ある回答）、発言の編集、再生成のときの構造。今回の会話はどれも候補 1 件だった。
