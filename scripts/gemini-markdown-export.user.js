@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Gemini Markdown Handoff
 // @namespace    https://github.com/hal1278/userscripts
-// @version      0.1.0
+// @version      0.1.1
 // @description  Copy the Gemini conversation shown on screen as Markdown.
 // @author       hal1278
 // @license      MIT
@@ -209,9 +209,13 @@
   // Side effects: page tokens, network, clipboard, notifications.
   // ---------------------------------------------------------------------
 
+  /** The page's own window (in Firefox, `unsafeWindow` from the sandbox). */
+  function pageWindow() {
+    return typeof unsafeWindow === "undefined" ? window : unsafeWindow;
+  }
+
   function readPageTokens() {
-    const page = typeof unsafeWindow === "undefined" ? window : unsafeWindow;
-    const wiz = page.WIZ_global_data;
+    const wiz = pageWindow().WIZ_global_data;
     const tokens = { at: wiz?.SNlM0e, bl: wiz?.cfb2h, sid: wiz?.FdrFJe };
     for (const [name, value] of Object.entries(tokens)) {
       if (typeof value !== "string" || value === "") {
@@ -236,15 +240,21 @@
       "f.req": JSON.stringify([[[HISTORY_RPC, JSON.stringify(args), null, "generic"]]]),
       at: tokens.at,
     });
+    const init = {
+      method: "POST",
+      credentials: "include",
+      cache: "no-store",
+      headers: { "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8" },
+      body: body.toString(),
+    };
+    // Send it with the page's fetch, as the web app does. In Firefox the
+    // sandbox's own fetch failed with a NetworkError; the page's fetch needs
+    // its options cloned into the page.
+    const page = pageWindow();
+    const pageInit = typeof cloneInto === "function" ? cloneInto(init, page) : init;
     let response;
     try {
-      response = await fetch(`${ORIGIN}/_/BardChatUi/data/batchexecute?${query}`, {
-        method: "POST",
-        credentials: "include",
-        cache: "no-store",
-        headers: { "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8" },
-        body,
-      });
+      response = await page.fetch(`${ORIGIN}/_/BardChatUi/data/batchexecute?${query}`, pageInit);
     } catch (error) {
       throw new Error(`history request failed: network error (${error.message})`);
     }
